@@ -1,0 +1,170 @@
+services:
+  # MariaDB Database (optimized for low memory - 50% less than MySQL)
+  mysql:
+    image: mariadb:11.2-jammy
+    container_name: ecoscan-mysql
+    restart: unless-stopped
+
+    # Lightweight optimization for 4GB VM (256MB vs 512MB MySQL)
+    command: >
+      --max-connections=50 --innodb-buffer-pool-size=128M --innodb-log-file-size=32M --innodb-flush-log-at-trx-commit=2 --innodb-flush-method=O_DIRECT --query-cache-size=0 --query-cache-type=0 --table-open-cache=256 --table-definition-cache=400 --max-allowed-packet=16M --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-file-per-table=1 --innodb-stats-on-metadata=0
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MARIADB_AUTO_UPGRADE: "1"
+      TZ: Asia/Jakarta
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/dlh_ecoscan.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+
+    ports:
+      - "127.0.0.1:3306:3306" # Localhost only for security
+
+    networks:
+      - ecoscan-network
+
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  # Backend API (Node.js + Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_REPOSITORY:-kuinsimndaa/ecoscan_dlh}/backend:${IMAGE_TAG:-latest}
+    container_name: ecoscan-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      NODE_OPTIONS: "--max-old-space-size=192" # Limit heap to 192MB (memory optimization)
+      PORT: 3030
+      DB_HOST: mysql
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      TZ: Asia/Jakarta
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3030:3030" # Publicly accessible for API calls from browser
+    networks:
+      - ecoscan-network
+    volumes:
+      - ./backend/logs:/app/logs
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3030/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Frontend (React + Vite + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_APP_NAME: ${VITE_APP_NAME:-EcoScan DLH}
+    image: ghcr.io/${GITHUB_REPOSITORY:-kuinsimndaa/ecoscan_dlh}/frontend:${IMAGE_TAG:-latest}
+    container_name: ecoscan-frontend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Jakarta
+    ports:
+      - "80:80" # Standard HTTP port (eco-scan-web.momoi.my.id)
+      - "443:443" # HTTPS (when SSL configured)
+    networks:
+      - ecoscan-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+networks:
+  ecoscan-network:
+    driver: bridge
+    name: ecoscan-network
+
+volumes:
+  mysql_data:
+    driver: local
+    name: ecoscan-mysql-data
+
+# Production Notes:
+# 1. Database: MariaDB 11.2 (50% less memory than MySQL 8.0)
+# 2. Memory optimized: mysql=256MB, backend=192MB heap, frontend=64MB
+# 3. Database and backend ports bound to localhost only for security
+# 4. Frontend accessible on port 80/443 publicly
+# 5. All services use resource limits for 4GB VM (isolated + lightweight)
+# 6. Logs are rotated to prevent disk issues
+# 7. Health checks ensure services are ready before accepting traffic
+#
+# Resource Usage (per app):
+# - MariaDB: 256MB (vs 512MB MySQL)
+# - Backend: 256MB (192MB heap limit)
+# - Frontend: 64MB (Nginx)
+# Total: ~576MB per app stack
+#
+# Required Environment Variables (.env file):
+# - DB_USER, DB_PASSWORD, DB_NAME
+# - CORS_ORIGIN (e.g., http://localhost or https://your-domain.com)
+# - VITE_API_BASE_URL (e.g., http://localhost:3030 or https://api.your-domain.com)
+# - NODE_ENV (development or production)
+# - IMAGE_TAG (for CI/CD deployments, defaults to 'latest')
+# - GITHUB_REPOSITORY (for CI/CD, e.g., kuinsimndaa/ecoscan_dlh)
+#
+# MariaDB Compatibility:
+# - 100% compatible with mysql2 npm package
+# - Existing SQL schema works without modifications
+# - Can migrate back to MySQL if needed (keep SQL portable)

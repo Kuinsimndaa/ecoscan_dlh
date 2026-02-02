@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-green: #16a34a;
+  --dark-slate: #0f172a;
+}
+
+/* 1. Base Styling */
+body {
+  margin: 0;
+  /* Font Inter yang dipanggil di index.html diterapkan di sini */
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  @apply bg-[#F8FAFC] text-slate-900;
+}
+
+/* 2. Custom Scrollbar agar lebih estetik */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-green-500 transition-colors;
+}
+
+/* 3. Reusable Components (Tailwind @apply) */
+@layer components {
+  /* Button Style Utama */
+  .btn-primary {
+    @apply bg-green-600 text-white font-bold py-3 px-6 rounded-2xl 
+           transition-all duration-300 hover:bg-green-700 
+           active:scale-95 shadow-lg shadow-green-200;
+  }
+
+  /* Input Style Minimalis */
+  .input-field {
+    @apply w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl 
+           focus:ring-2 focus:ring-green-500 focus:bg-white 
+           outline-none transition-all duration-300 text-slate-800;
+  }
+
+  /* Card Dashboard (Gaya Glassmorphism Lembut) */
+  .glass-card {
+    @apply bg-white border border-slate-100 rounded-[2.5rem] 
+           shadow-[0_10px_40px_rgba(0,0,0,0.03)] p-8;
+  }
+}
+
+/* 4. Scanner UI Fix (Memperbaiki tampilan kamera) */
+#reader {
+  border: none !important;
+  @apply rounded-[2.5rem] overflow-hidden shadow-2xl;
+}
+
+#reader video {
+  @apply object-cover w-full h-full rounded-[2.5rem];
+}
+
+#reader__dashboard {
+  @apply hidden; /* Sembunyikan tombol default bawaan library scanner */
+}
+
+/* 5. Utility Animations */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* 6. Mobile Optimization */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply rounded-[2rem] p-6;
+  }
+
+  h1 {
+    @apply text-2xl;
+  }
+}

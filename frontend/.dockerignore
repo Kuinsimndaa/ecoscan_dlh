@@ -1,0 +1,78 @@
+# ===== VERSION CONTROL =====
+.git
+.gitignore
+.gitattributes
+.github
+
+# ===== DEPENDENCIES (installed in Dockerfile) =====
+node_modules
+# bun.lockb is needed for --frozen-lockfile install
+# bun.lockb is needed for --frozen-lockfile install
+yarn.lock
+
+# ===== ENVIRONMENT & SECRETS =====
+.env
+.env.*
+!.env.example
+
+# ===== PRISMA GENERATED (generated in Dockerfile) =====
+src/generated
+prisma/migrations/**/migration_lock.toml
+
+# ===== DEVELOPMENT FILES =====
+docs
+*.md
+!README.md
+CONTRIBUTING.md
+CHANGELOG.md
+
+# ===== LOGS & TEMP =====
+*.log
+logs
+tmp
+temp
+.cache
+dist
+build
+
+# ===== OS FILES =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings
+
+# ===== BACKUPS & DUMPS =====
+backups
+*.backup
+*.dump
+*.sql.gz
+
+# ===== TESTING =====
+coverage
+.nyc_output
+test
+tests
+*.test.ts
+*.spec.ts
+
+# ===== SCRIPTS (if not needed in container) =====
+scripts/*.ps1
+scripts/*.sh
+!scripts/entrypoint.sh
+
+# ===== CI/CD =====
+.github/workflows
+
+# ===== DOCKER =====
+Dockerfile*
+docker-compose*.yml
+.dockerignore

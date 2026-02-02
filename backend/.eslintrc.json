@@ -1,0 +1,23 @@
+{
+    "env": {
+        "node": true,
+        "es2021": true
+    },
+    "extends": [
+        "airbnb-base",
+        "prettier"
+    ],
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "rules": {
+        "no-console": "off",
+        "consistent-return": "warn",
+        "no-unused-vars": "warn",
+        "no-param-reassign": "warn",
+        "import/newline-after-import": "off",
+        "prefer-destructuring": "warn",
+        "no-underscore-dangle": "off",
+        "camelcase": "warn"
+    }
+}
