@@ -6,7 +6,7 @@ export default defineConfig({
   root: './',
   publicDir: 'public',
   server: {
-    port: 5050,
+    port: parseInt(process.env.VITE_PORT, 10) || 5050,
     strictPort: true,
     host: '0.0.0.0',
     open: false,
