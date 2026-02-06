@@ -39,4 +39,4 @@ Bagian ini ditujukan untuk Tim IT DLH dalam melakukan konfigurasi ulang:
 1. Pastikan Node.js dan MySQL sudah terinstal di server.
 2. Clone repository dan lakukan instalasi library (`npm install`).
 3. Konfigurasi file `.env` sesuai dengan database server DLH.
-4. Build frontend menggunakan `npm run build` untuk mendapatkan performa terbaik.
+4. Build frontend menggunakan `npm run build` untuk mendapatkan performa terbaik. 
