@@ -10,7 +10,8 @@
 const char* WIFI_SSID     = "Queens1";
 const char* WIFI_PASSWORD = "queensi29";
 
-// ===== Konfigurasi Server =====
+// SEMENTARA UNTUK TEST LOKAL
+// const char* SERVER_URL = "http://192.168.43.52:3030/api/scan/rfid-device";
 const char* SERVER_URL = "https://ecoscan-web.dev-myproject.my.id/api/scan/rfid-device";
 
 // ===== Pin RFID =====
@@ -20,15 +21,23 @@ const char* SERVER_URL = "https://ecoscan-web.dev-myproject.my.id/api/scan/rfid-
 #define MOSI_PIN 23
 #define MISO_PIN 19
 
+// ===== Pin Buzzer =====
+#define BUZZER_PIN 15
+
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 // Forward declaration
 void sendDataToServer(String uid);
+void playBuzzer(int type);
 
 void setup() {
   Serial.begin(115200);
+
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
   mfrc522.PCD_Init();
+
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW); // Pastikan buzzer mati saat awal
 
   Serial.println("\n--- ECO-SCAN RFID SYSTEM ---");
 
@@ -77,6 +86,10 @@ void loop() {
   // Beri jeda agar tidak terbaca berulang kali
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
+  
+  // Wajib Re-Init (Penting untuk ESP32 agar sensor tidak ngehang/bengong)
+  mfrc522.PCD_Init();
+  
   delay(2000);
 }
 
@@ -88,11 +101,18 @@ void sendDataToServer(String uid) {
     return;
   }
 
-  WiFiClientSecure client;
-  client.setInsecure(); // Bypass SSL certificate verification for ESP32
-
   HTTPClient http;
-  http.begin(client, SERVER_URL);
+  WiFiClient client;
+  WiFiClientSecure clientSecure;
+
+  if (String(SERVER_URL).startsWith("https")) {
+    clientSecure.setInsecure(); // Bypass SSL certificate verification for ESP32
+    http.begin(clientSecure, SERVER_URL);
+  } else {
+    // Mode Lokal (HTTP Biasa tanpa enkripsi)
+    http.begin(client, SERVER_URL);
+  }
+  
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(8000); // timeout 8 detik
 
@@ -113,16 +133,34 @@ void sendDataToServer(String uid) {
 
     if (httpCode == 200) {
       Serial.println(">>> ✅ TRANSAKSI BERHASIL <<<");
+      playBuzzer(200);
     } else if (httpCode == 429) {
       Serial.println(">>> ⏳ COOLDOWN: Tunggu 15 detik <<<");
+      playBuzzer(429);
     } else if (httpCode == 404) {
       Serial.println(">>> ❌ KARTU TIDAK TERDAFTAR <<<");
+      playBuzzer(404);
     } else {
       Serial.println(">>> ⚠️  TRANSAKSI GAGAL <<<");
+      playBuzzer(0);
     }
   } else {
     Serial.printf("[ERROR] HTTP error: %s\n", http.errorToString(httpCode).c_str());
   }
 
   http.end();
+}
+
+void playBuzzer(int type) {
+  if (type == 200) {
+    // BERHASIL: 1 kali beep pendek
+    digitalWrite(BUZZER_PIN, HIGH); delay(150);
+    digitalWrite(BUZZER_PIN, LOW);
+  } else {
+    // GAGAL (Belum Terdaftar / Cooldown / Error Sistem): 2 kali beep
+    for (int i = 0; i < 2; i++) {
+      digitalWrite(BUZZER_PIN, HIGH); delay(150);
+      digitalWrite(BUZZER_PIN, LOW); delay(100);
+    }
+  }
 }
