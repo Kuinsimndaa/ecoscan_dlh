@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from '../../config/axiosInstance';
-import { LayoutDashboard, QrCode, Clock, Truck, User, Zap } from 'lucide-react';
-import API_BASE_URL from '../../config/api';
+import { LayoutDashboard, QrCode, Clock, Truck, User, Zap, Cpu } from 'lucide-react';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 const Dashboard = () => {
@@ -13,36 +12,47 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  const fetchStats = async () => {
-    setLoading(true);
+  const fetchStats = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
-      // Ambil data hari ini
-      const tanggalHariIni = new Date().toISOString().split('T')[0];
-      const res = await axios.get(`/api/scan/laporan?tanggal=${tanggalHariIni}`);
-
-      // Hitung statistik berdasarkan data hari ini
-      const uniqueArmada = [...new Set(res.data.map((item) => item.namaPengendara))].length;
-
-      setStats({
-        totalScan: res.data.length,
-        armadaUnik: uniqueArmada,
-        recentActivity: res.data.slice(0, 15), // Ambil 15 terbaru
-      });
+      // Perbaikan Endpoint: Menggunakan endpoint khusus dashboard 
+      // yang sudah menggunakan waktu lokal Asia/Jakarta (menghindari bug zona waktu UTC)
+      const res = await axios.get(`/api/scan/dashboard-stats`);
+      
+      if (res.data.success) {
+        setStats({
+          totalScan: res.data.totalKedatangan,
+          armadaUnik: res.data.armadaBeroperasi,
+          recentActivity: res.data.recentActivity, 
+        });
+      }
     } catch {
       console.error('Gagal sinkronisasi dashboard mandor');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(false);
     
-    // Polling realtime: refresh data setiap 2 detik
-    const interval = setInterval(fetchStats, 2000);
+    // Polling realtime: refresh data setiap 2 detik (tanpa mereset UI)
+    const interval = setInterval(() => fetchStats(true), 2000);
     
     return () => clearInterval(interval);
   }, []);
+
+  // Komponen Badge untuk menyamakan dengan halaman Scanner
+  const MethodBadge = ({ metode }) => (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+      metode === 'RFID'
+        ? 'bg-blue-100 text-blue-700 border border-blue-200'
+        : 'bg-green-100 text-green-700 border border-green-200'
+    }`}>
+      {metode === 'RFID' ? <Cpu size={9} /> : <QrCode size={9} />}
+      {metode}
+    </span>
+  );
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 bg-gradient-to-b from-slate-50 via-amber-50/20 to-slate-50 min-h-screen">
@@ -154,7 +164,7 @@ const Dashboard = () => {
                 {stats.recentActivity.map((log, idx) => (
                   <div
                     key={idx}
-                    className="bg-white rounded-xl p-4 shadow-md border border-slate-200/50 hover:shadow-lg hover:border-green-200 transition-all"
+                    className={`bg-white rounded-xl p-4 shadow-md border ${idx === 0 ? 'border-green-300 bg-green-50/20' : 'border-slate-200/50'} hover:shadow-lg hover:border-green-200 transition-all`}
                   >
                     {/* Time + Badge Row */}
                     <div className="flex justify-between items-start mb-3">
@@ -168,12 +178,20 @@ const Dashboard = () => {
                     </div>
 
                     {/* Primary Info */}
-                    <h4 className="font-black text-slate-900 text-base uppercase mb-1 leading-tight">
-                      {log.namaPengendara}
-                    </h4>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h4 className="font-black text-slate-900 text-base uppercase leading-tight">
+                        {log.namaPengendara}
+                      </h4>
+                      {idx === 0 && (
+                        <span className="px-2 py-0.5 bg-green-500 text-white text-[9px] font-black uppercase rounded-full tracking-wider">
+                          Terbaru
+                        </span>
+                      )}
+                      <MethodBadge metode={log.metodeScan} />
+                    </div>
 
                     {/* Secondary Info */}
-                    <div className="text-xs text-slate-600 mb-3">
+                    <div className="text-xs text-slate-600 mb-3 mt-1">
                       {log.jenisKendaraan} • {log.wilayah}
                     </div>
 
@@ -237,7 +255,7 @@ const Dashboard = () => {
                   stats.recentActivity.map((log, idx) => (
                     <tr
                       key={idx}
-                      className={`hover:bg-gradient-to-r hover:from-green-50/50 hover:to-blue-50/50 transition-all group border-l-4 ${idx % 2 === 0 ? 'border-l-transparent' : 'border-l-green-200/30'}`}
+                      className={`hover:bg-gradient-to-r hover:from-green-50/50 hover:to-blue-50/50 transition-all group border-l-4 ${idx === 0 ? 'border-l-green-500 bg-green-50/10' : idx % 2 === 0 ? 'border-l-transparent' : 'border-l-green-200/30'}`}
                     >
                       <td className="px-10 py-8 text-slate-500 font-bold tabular-nums text-base">
                         <span className="px-3 py-1.5 bg-slate-100 group-hover:bg-green-100 rounded-lg transition-colors">
@@ -245,8 +263,16 @@ const Dashboard = () => {
                         </span>
                       </td>
                       <td className="px-10 py-8">
-                        <div className="font-black text-slate-900 uppercase text-lg group-hover:text-green-700 transition-colors leading-tight">
-                          {log.namaPengendara}
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <div className="font-black text-slate-900 uppercase text-lg group-hover:text-green-700 transition-colors leading-tight">
+                            {log.namaPengendara}
+                          </div>
+                          {idx === 0 && (
+                            <span className="px-2 py-0.5 bg-green-500 text-white text-[9px] font-black uppercase rounded-full tracking-wider">
+                              Terbaru
+                            </span>
+                          )}
+                          <MethodBadge metode={log.metodeScan} />
                         </div>
                         <div className="text-xs font-bold text-green-600 uppercase tracking-tighter mt-1">
                           {log.jenisKendaraan} —{' '}
@@ -294,3 +320,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

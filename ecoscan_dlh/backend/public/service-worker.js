@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2';
+const CACHE_VERSION = '5';
 const CACHE_NAME = `ecoscan-dlh-v${CACHE_VERSION}`;
 const STATIC_ASSETS = 'ecoscan-static-v' + CACHE_VERSION;
 const MAX_STATIC_ENTRIES = 60; // Keep cache size bounded

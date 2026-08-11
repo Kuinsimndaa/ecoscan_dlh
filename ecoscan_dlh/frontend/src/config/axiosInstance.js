@@ -6,6 +6,20 @@ const instance = axios.create({
   timeout: 10000,
 });
 
+// Request interceptor to attach token
+instance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor to centralize error handling
 instance.interceptors.response.use(
   (response) => response,

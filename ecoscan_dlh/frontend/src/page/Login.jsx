@@ -42,14 +42,18 @@ const Login = () => {
       const res = await axios.post(endpoint, { email, password });
 
       if (res.data.success) {
-        localStorage.setItem('admin_profile', JSON.stringify(res.data.data));
+        const userData = res.data.data || res.data.user;
+        localStorage.setItem('admin_profile', JSON.stringify(userData));
         localStorage.setItem('login_time', new Date().toISOString());
+        if (res.data.token) {
+          localStorage.setItem('token', res.data.token);
+        }
 
         // Tampilkan notifikasi sukses
         setNotification({
           type: 'success',
           title: '✓ LOGIN BERHASIL',
-          message: `Selamat datang, ${res.data.data.nama}!`,
+          message: `Selamat datang, ${userData.nama}!`,
           playSound: true,
         });
 
@@ -62,7 +66,7 @@ const Login = () => {
       setNotification({
         type: 'error',
         title: '✗ LOGIN GAGAL',
-        message: err.response?.data?.message || 'Gagal terhubung ke server backend!',
+        message: err.response?.data?.message || err.message || 'Gagal terhubung ke server backend!',
         playSound: false,
       });
       // Reset CAPTCHA saat login gagal
