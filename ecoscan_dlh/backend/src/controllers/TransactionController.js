@@ -66,7 +66,12 @@ const saveScan = async (req, res) => {
     ]);
 
     console.info(`SCAN SAVED: QRCode: ${qrcodeClean}, Petugas: ${data.namaPetugas}`);
-    return res.status(200).json({ success: true, message: 'Scan berhasil dicatat!' });
+    return res.status(200).json({
+      success: true,
+      message: 'Scan berhasil dicatat!',
+      petugas: data.namaPetugas,
+      kedatanganKe,
+    });
   } catch (error) {
     console.error('❌ Scan Error:', error);
     return res.status(500).json({ success: false, message: 'Gagal memproses data' });
@@ -515,7 +520,7 @@ const getTodayHistory = async (req, res) => {
   try {
     const hariIni = getTodayLocalDate();
     const [rows] = await db.execute(
-      `SELECT namaPetugas, jenisArmada, wilayah, tarif, mandor,
+      `SELECT id, namaPetugas, jenisArmada, wilayah, tarif, mandor,
               TIME_FORMAT(waktu, '%H:%i:%s') as waktu,
               kedatanganKe, metode_scan, rfid
        FROM laporan

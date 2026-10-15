@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 
 const Notification = ({
@@ -10,20 +10,11 @@ const Notification = ({
   playSound = false,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
+  const onCloseRef = useRef(onClose);
 
   useEffect(() => {
-    // Play sound jika diperlukan
-    if (playSound && type === 'success') {
-      playSuccessSound();
-    }
-
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(() => onClose?.(), 300);
-    }, duration);
-
-    return () => clearTimeout(timer);
-  }, [duration, onClose, playSound, type]);
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const playSuccessSound = () => {
     // Buat suara success dengan Web Audio API
@@ -55,6 +46,20 @@ const Notification = ({
     setTimeout(() => playNote(frequencies[1], 0.15), 150);
     setTimeout(() => playNote(frequencies[2], 0.3), 300);
   };
+
+  useEffect(() => {
+    // Play sound jika diperlukan
+    if (playSound && type === 'success') {
+      playSuccessSound();
+    }
+
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => onCloseRef.current?.(), 300);
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [duration, playSound, type]);
 
   if (!isVisible) return null;
 

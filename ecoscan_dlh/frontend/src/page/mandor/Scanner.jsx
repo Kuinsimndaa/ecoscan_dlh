@@ -16,6 +16,7 @@ const Scanner = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const pollingRef = useRef(null);
+  const latestScanIdRef = useRef(null);
 
   // Format rupiah
   const formatRupiah = (val) =>
@@ -27,7 +28,33 @@ const Scanner = () => {
       setIsLoadingHistory(true);
       const res = await axios.get('/api/scan/today-history');
       if (res.data.success) {
-        setScanHistory(res.data.data);
+        const history = res.data.data;
+        const latestScanId = history.reduce(
+          (latestId, item) => Math.max(latestId, Number(item.id) || 0),
+          0
+        );
+
+        if (latestScanIdRef.current === null) {
+          latestScanIdRef.current = latestScanId;
+        } else if (latestScanId > latestScanIdRef.current) {
+          const newRfidScan = history.find(
+            (item) => Number(item.id) > latestScanIdRef.current
+              && String(item.metode_scan).toUpperCase() === 'RFID'
+          );
+          latestScanIdRef.current = latestScanId;
+
+          if (newRfidScan) {
+            setNotification({
+              type: 'success',
+              title: '✓ SCAN BERHASIL',
+              message: `Armada ${newRfidScan.namaPetugas} tercatat.`,
+              duration: 3000,
+              playSound: true,
+            });
+          }
+        }
+
+        setScanHistory(history);
         setLastUpdate(new Date().toLocaleTimeString('id-ID'));
       }
     } catch (err) {
@@ -84,7 +111,7 @@ const Scanner = () => {
         setNotification({
           type: 'success',
           title: '✓ SCAN BERHASIL',
-          message: `Armada ${response.data.petugas || ''} tercatat. Kedatangan ke-${response.data.kedatanganKe || 1}`,
+          message: `Armada ${response.data.petugas || ''} tercatat.`,
           duration: 3000,
           playSound: true,
         });
