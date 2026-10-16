@@ -1,5 +1,29 @@
 # CHANGELOG - EcoScan-DLH
 
+## 🎯 Ringkasan Perbaikan (v1.2.0) - Stabilitas Notifikasi & Produksi cPanel
+Rilis ini menyelesaikan masalah looping notifikasi, kendala network error API production, penguatan autentikasi database, serta isolasi arsip deployment git.
+
+### 🐛 Bug Fixes & Stabilitas
+1. **Idempotensi Notifikasi Scan (`Scanner.jsx`):**
+   - Menambahkan pelacakan `Set` (`notifiedScanIdsRef`) untuk mendata setiap scan RFID yang sudah dinotifikasi.
+   - Mengeliminasi notifikasi berulang (*infinite notification loop*) saat polling histori 2 detik berjalan.
+   - Menambahkan `key` unik pada pemanggilan komponen `<Notification />`.
+2. **Hardening Lifecycle Toast (`Notification.jsx`):**
+   - Melindungi audio Web Audio API dengan blok `try-catch`.
+   - Mengisolasi timer penutupan ganda (`closeTimer`) saat unmount komponen.
+   - Menjaga referensi `onClose` via `useRef` agar tidak ter-reset oleh re-render polling parent.
+3. **Dynamic API Base URL (`api.js`):**
+   - Mengganti fallback hardcoded `127.0.0.1:5000` dengan URL relatif (`""`) pada mode produksi.
+   - Mengeliminasi error `ERR_CONNECTION_REFUSED` dan CORS pada arsitektur monolit Express di cPanel.
+4. **PWA Service Worker Update (`service-worker.js`):**
+   - Bump versi cache ke `v6`.
+   - Mengubah background sync URL ke `/api/scan/save` relatif.
+5. **Git Hygiene & Pengamanan Arsip:**
+   - Menambahkan `*.tar.gz`, `*.tgz`, `*.zip`, dan `public-dashboard-fix.tar.gz` ke `.gitignore`.
+   - Memastikan tidak ada file arsip binary yang ter-commit ke Git repository.
+
+---
+
 ## 🎯 Ringkasan Perbaikan (v1.1.0)
 Rilis ini mencakup 6 perbaikan utama dan fitur baru yang signifikan untuk meningkatkan UX dan keamanan aplikasi.
 

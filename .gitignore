@@ -11,10 +11,14 @@ Thumbs.db
 # Excluded per user request
 DEPL.md
 
-# Build & Deployment artifacts
+# Build & Deployment artifacts & archives
+*.tar.gz
+*.tgz
+*.tar
+*.zip
+public-dashboard-fix.tar.gz
 ecoscan_deploy.tar.gz
 ecoscan_deploy_frontend.zip
-ecoscan_dlh/ecoscan_deploy.tar.gz
 dist/
 build/
 .pio/

@@ -1,4 +1,4 @@
-const CACHE_VERSION = '5';
+const CACHE_VERSION = '6';
 const CACHE_NAME = `ecoscan-dlh-v${CACHE_VERSION}`;
 const STATIC_ASSETS = 'ecoscan-static-v' + CACHE_VERSION;
 const MAX_STATIC_ENTRIES = 60; // Keep cache size bounded
@@ -160,7 +160,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-data') { // Sync failed scans when back online
     event.waitUntil(
-      fetch(`${location.protocol}//${location.hostname}:${location.port || 3030}/api/scan/save`)
+      fetch('/api/scan/save')
         .catch(() => {
           // Silent fail, will retry later
         })

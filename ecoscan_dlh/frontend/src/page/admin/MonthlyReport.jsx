@@ -452,6 +452,7 @@ const MonthlyReport = () => {
       {/* Notification */}
       {notification && (
         <Notification
+          key={notification.id || notification.title || 'report-notif'}
           type={notification.type}
           title={notification.title}
           message={notification.message}

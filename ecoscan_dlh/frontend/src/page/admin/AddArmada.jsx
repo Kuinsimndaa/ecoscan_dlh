@@ -647,6 +647,7 @@ const AddArmada = () => {
       {/* Notification */}
       {notification && (
         <Notification
+          key={notification.id || notification.title || 'armada-notif'}
           type={notification.type}
           title={notification.title}
           message={notification.message}

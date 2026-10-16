@@ -38,6 +38,16 @@ Selamat datang! Repository ini berisi dokumentasi lengkap untuk aplikasi **EcoSc
 
 ---
 
+### Laporan Analisis Sistem & Troubleshooting Produksi 🛡️
+**Baca: [SYSTEM_ANALYSIS_AND_RESOLUTION_REPORT.md](./SYSTEM_ANALYSIS_AND_RESOLUTION_REPORT.md)**
+- 🔍 Investigasi mendalam notifikasi looping pada scanner
+- 🌐 Perbaikan Network Error dan konfigurasi URL API dinamis
+- 🔐 Analisis autentikasi Bcrypt & integritas database cPanel
+- ⚡ Mitigasi batas sumber daya CloudLinux (Unable to fork / NPROC 40/40)
+- 🔒 Tata kelola Git dan SOP deployment produksi
+
+---
+
 ## 🚀 Quick Start
 
 ### Installation

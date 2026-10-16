@@ -168,6 +168,7 @@ const Login = () => {
       {/* Notification */}
       {notification && (
         <Notification
+          key={notification.id || notification.title || 'login-notif'}
           type={notification.type}
           title={notification.title}
           message={notification.message}

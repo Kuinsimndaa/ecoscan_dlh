@@ -336,6 +336,7 @@ const IdBilling = () => {
       {/* Notification */}
       {notification && (
         <Notification
+          key={notification.id || notification.title || 'billing-notif'}
           type={notification.type}
           title={notification.title}
           message={notification.message}

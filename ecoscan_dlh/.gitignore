@@ -17,12 +17,16 @@ pnpm-lock.yaml
 .env.*.local
 !.env.example
 
-# Build outputs
+# Build outputs and archives
 dist/
 build/
 frontend/dist/
 backend/dist/
 *.tsbuildinfo
+*.tar.gz
+*.tgz
+*.tar
+*.zip
 
 # Logs
 logs/

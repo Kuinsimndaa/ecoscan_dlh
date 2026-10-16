@@ -17,6 +17,7 @@ const Scanner = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const pollingRef = useRef(null);
   const latestScanIdRef = useRef(null);
+  const notifiedScanIdsRef = useRef(new Set());
 
   // Format rupiah
   const formatRupiah = (val) =>
@@ -27,27 +28,43 @@ const Scanner = () => {
     try {
       setIsLoadingHistory(true);
       const res = await axios.get('/api/scan/today-history');
-      if (res.data.success) {
+      if (res.data?.success && Array.isArray(res.data.data)) {
         const history = res.data.data;
-        const latestScanId = history.reduce(
+        const currentMaxId = history.reduce(
           (latestId, item) => Math.max(latestId, Number(item.id) || 0),
           0
         );
 
         if (latestScanIdRef.current === null) {
-          latestScanIdRef.current = latestScanId;
-        } else if (latestScanId > latestScanIdRef.current) {
-          const newRfidScan = history.find(
-            (item) => Number(item.id) > latestScanIdRef.current
-              && String(item.metode_scan).toUpperCase() === 'RFID'
-          );
-          latestScanIdRef.current = latestScanId;
+          // Inisialisasi awal: tandai seluruh ID yang sudah ada agar tidak memicu notifikasi beruntun saat pertama buka
+          history.forEach((item) => {
+            const idNum = Number(item.id);
+            if (idNum) notifiedScanIdsRef.current.add(idNum);
+          });
+          latestScanIdRef.current = currentMaxId;
+        } else if (currentMaxId > latestScanIdRef.current) {
+          // Cari scan RFID baru yang belum pernah dinotifikasi
+          const newRfidScans = history.filter((item) => {
+            const itemId = Number(item.id);
+            const isRfid = String(item.metode_scan || '').toUpperCase() === 'RFID';
+            return isRfid && itemId && itemId > latestScanIdRef.current && !notifiedScanIdsRef.current.has(itemId);
+          });
 
-          if (newRfidScan) {
+          // Perbarui checkpoint ID tertinggi
+          latestScanIdRef.current = currentMaxId;
+
+          if (newRfidScans.length > 0) {
+            const newestScan = newRfidScans[0];
+            // Tandai scan agar tidak pernah di-notifikasi ulang (idempotent)
+            newRfidScans.forEach((scan) => {
+              notifiedScanIdsRef.current.add(Number(scan.id));
+            });
+
             setNotification({
+              id: `rfid-${newestScan.id}-${Date.now()}`,
               type: 'success',
               title: '✓ SCAN BERHASIL',
-              message: `Armada ${newRfidScan.namaPetugas} tercatat.`,
+              message: `Armada ${newestScan.namaPetugas} tercatat.`,
               duration: 3000,
               playSound: true,
             });
@@ -109,6 +126,7 @@ const Scanner = () => {
       });
       if (response.data.success) {
         setNotification({
+          id: `qr-${Date.now()}`,
           type: 'success',
           title: '✓ SCAN BERHASIL',
           message: `Armada ${response.data.petugas || ''} tercatat.`,
@@ -120,9 +138,11 @@ const Scanner = () => {
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Terjadi kesalahan pada server';
       setNotification({
+        id: `err-${Date.now()}`,
         type: 'error',
         title: '✗ SCAN GAGAL',
         message: errorMsg,
+        duration: 4000,
         playSound: false,
       });
       setTimeout(() => window.location.reload(), 2000);
@@ -341,6 +361,7 @@ const Scanner = () => {
       {/* Notification */}
       {notification && (
         <Notification
+          key={notification.id || `notif-${Date.now()}`}
           type={notification.type}
           title={notification.title}
           message={notification.message}

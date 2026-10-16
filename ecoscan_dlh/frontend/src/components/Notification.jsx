@@ -17,34 +17,39 @@ const Notification = ({
   }, [onClose]);
 
   const playSuccessSound = () => {
-    // Buat suara success dengan Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      // Buat suara success dengan Web Audio API
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioContext = new AudioCtx();
 
-    // Frekuensi nada (Hz)
-    const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (Do Mi Sol)
-    let currentNoteIndex = 0;
+      // Frekuensi nada (Hz)
+      const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 (Do Mi Sol)
 
-    const playNote = (freq, duration) => {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const playNote = (freq, noteDuration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
 
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
-      oscillator.frequency.value = freq;
-      oscillator.type = 'sine';
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
 
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + noteDuration);
 
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + duration);
-    };
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + noteDuration);
+      };
 
-    // Main melody (ding dong sound)
-    playNote(frequencies[0], 0.15);
-    setTimeout(() => playNote(frequencies[1], 0.15), 150);
-    setTimeout(() => playNote(frequencies[2], 0.3), 300);
+      // Main melody (ding dong sound)
+      playNote(frequencies[0], 0.15);
+      setTimeout(() => playNote(frequencies[1], 0.15), 150);
+      setTimeout(() => playNote(frequencies[2], 0.3), 300);
+    } catch (err) {
+      console.warn('Audio playback not allowed or failed:', err);
+    }
   };
 
   useEffect(() => {
@@ -53,12 +58,18 @@ const Notification = ({
       playSuccessSound();
     }
 
+    let closeTimer = null;
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(() => onCloseRef.current?.(), 300);
+      closeTimer = setTimeout(() => {
+        onCloseRef.current?.();
+      }, 300);
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
   }, [duration, playSound, type]);
 
   if (!isVisible) return null;
@@ -93,7 +104,7 @@ const Notification = ({
           <button
             onClick={() => {
               setIsVisible(false);
-              setTimeout(() => onClose?.(), 300);
+              setTimeout(() => onCloseRef.current?.(), 300);
             }}
             className={`${iconColor} hover:opacity-70 transition-opacity flex-shrink-0 mt-1`}
           >
